@@ -21,7 +21,6 @@ import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 import okhttp3.OkHttpClient
 import okhttp3.Request
-import java.net.URL
 import java.util.*
 import java.util.concurrent.TimeUnit
 
@@ -72,15 +71,14 @@ object ProfileProcessor {
                         var download: Long = 0
                         var total: Long = 0
                         var expire: Long = 0
-                        if (snapshot?.type == Profile.Type.Url) {
+                        if (snapshot.type == Profile.Type.Url) {
                             if (snapshot.source.startsWith("https://", true)) {
-                                val client = OkHttpClient()
                                 val request = Request.Builder()
                                     .url(snapshot.source)
                                     .header("User-Agent", "ClashforWindows/0.19.23")
                                     .build()
 
-                                client.newCall(request).execute().use { response ->
+                                OkHttpHelper.client.newCall(request).execute().use { response ->
                                     val userinfo = response.headers["subscription-userinfo"]
                                     if (response.isSuccessful && userinfo != null) {
                                         val flags = userinfo.split(";")
@@ -96,7 +94,7 @@ object ProfileProcessor {
                                                 info[0].contains("total") && info[1].isNotEmpty() -> total =
                                                     info[1].toLong()
 
-                                                info[0].contains("expire") && info[1].isNotEmpty() ->  expire =
+                                                info[0].contains("expire") && info[1].isNotEmpty() -> expire =
                                                     (info[1].toDouble() * 1000).toLong()
                                             }
                                         }

@@ -24,6 +24,7 @@ import okhttp3.Request
 import java.io.FileNotFoundException
 import java.math.BigDecimal
 import java.util.*
+import java.util.concurrent.TimeUnit
 
 class ProfileManager(private val context: Context) : IProfileManager,
     CoroutineScope by CoroutineScope(Dispatchers.IO) {
@@ -130,21 +131,21 @@ class ProfileManager(private val context: Context) : IProfileManager,
     override suspend fun update(uuid: UUID) {
         scheduleUpdate(uuid, true)
         ImportedDao().queryByUUID(uuid)?.let {
-            if (it.type == Profile.Type.Url && it.source.startsWith("https://",true)) {
+            if (it.type == Profile.Type.Url && it.source.startsWith("https://", true)) {
                 updateFlow(it)
             }
         }
     }
 
     suspend fun updateFlow(old: Imported) {
-        val client = OkHttpClient()
+
         try {
             val request = Request.Builder()
                 .url(old.source)
                 .header("User-Agent", "ClashforWindows/0.19.23")
                 .build()
 
-            client.newCall(request).execute().use { response ->
+            OkHttpHelper.client.newCall(request).execute().use { response ->
                 if (!response.isSuccessful || response.headers["subscription-userinfo"] == null) return
 
                 var upload: Long = 0
@@ -165,12 +166,12 @@ class ProfileManager(private val context: Context) : IProfileManager,
                             info[0].contains("download") && info[1].isNotEmpty() -> download =
                                 BigDecimal(info[1]).longValueExact()
 
-                            info[0].contains("total") && info[1].isNotEmpty() ->  total =
+                            info[0].contains("total") && info[1].isNotEmpty() -> total =
                                 BigDecimal(info[1]).longValueExact()
 
                             info[0].contains("expire") && info[1].isNotEmpty() -> {
                                 if (info[1].isNotEmpty()) {
-                                    expire = (info[1].toDouble()*1000).toLong()
+                                    expire = (info[1].toDouble() * 1000).toLong()
                                 }
                             }
                         }
